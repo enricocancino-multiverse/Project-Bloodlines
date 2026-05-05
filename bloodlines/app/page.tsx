@@ -399,7 +399,7 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-white/80">
               {[
-                { label: 'Facebook', symbol: 'F' },
+                { label: 'Facebook', symbol: 'F' , href="https://www.facebook.com/share/1EDLTkpNSQ/"},
                 { label: 'Twitter', symbol: 'T' },
                 { label: 'Instagram', symbol: 'I' },
                 { label: 'LinkedIn', symbol: 'L' },
