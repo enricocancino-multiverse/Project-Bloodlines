@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CharacterCard from "../components/CharacterCard";
 
 type Character = {
@@ -8,6 +8,12 @@ type Character = {
   name: string;
   title: string;
   age: number;
+  birthday: string;
+  sex: string;
+  nationality: string;
+  mortalityYear: number | null;
+  address: string;
+  info: string;
   relation: string;
   trait: string;
   color: string;
@@ -20,48 +26,7 @@ type BoardSlot = {
   hint: string;
 };
 
-const initialCharacters: Character[] = [
-  {
-    id: "a1",
-    name: "Evelyn Ashcroft",
-    title: "Bloodline Matriarch",
-    age: 64,
-    relation: "Mother",
-    trait: "Sovereign",
-    color: "bg-rose-800/80",
-    initials: "EA",
-  },
-  {
-    id: "a2",
-    name: "Lucian Vale",
-    title: "Heir Apparent",
-    age: 38,
-    relation: "Father",
-    trait: "Guardian",
-    color: "bg-slate-700/80",
-    initials: "LV",
-  },
-  {
-    id: "a3",
-    name: "Isla Merrow",
-    title: "Kindred Scout",
-    age: 26,
-    relation: "Sibling",
-    trait: "Navigator",
-    color: "bg-cyan-700/80",
-    initials: "IM",
-  },
-  {
-    id: "a4",
-    name: "Rowan Blackthorn",
-    title: "Legacy Keeper",
-    age: 48,
-    relation: "Cousin",
-    trait: "Archivist",
-    color: "bg-amber-700/80",
-    initials: "RB",
-  },
-];
+const initialCharacters: Character[] = [];
 
 const initialSlots: BoardSlot[] = [
   { id: "slot1", label: "Founder", hint: "The origin of bloodlines" },
@@ -73,12 +38,12 @@ const initialSlots: BoardSlot[] = [
 ];
 
 const initialBoard: Record<string, string | null> = {
-  slot1: "a1",
-  slot2: "a2",
-  slot3: "a3",
+  slot1: null,
+  slot2: null,
+  slot3: null,
   slot4: null,
   slot5: null,
-  slot6: "a4",
+  slot6: null,
 };
 
 export default function Home() {
@@ -86,30 +51,71 @@ export default function Home() {
   const [board, setBoard] = useState<Record<string, string | null>>(initialBoard);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [comparePair, setComparePair] = useState<[string, string]>(["a1", "a2"]);
+  const [editBoxId, setEditBoxId] = useState<string | null>(null);
+  const [boxForm, setBoxForm] = useState({
+    name: "",
+    age: "",
+    birthday: "",
+    sex: "",
+    nationality: "",
+    mortalityYear: "",
+    address: "",
+    info: "",
+  });
 
-  const poolCharacters = characters.filter(
-    (character) => !Object.values(board).includes(character.id)
-  );
+  const activeBox =
+    selectedIds.length === 1
+      ? characters.find((character) => character.id === selectedIds[0]) ?? null
+      : null;
+
+  const selectedBoxes = characters.filter((character) => selectedIds.includes(character.id));
+  const hasBoardItems = Object.values(board).some((item) => item !== null);
 
   const compareText = useMemo(() => {
-    const [firstId, secondId] = comparePair;
-    if (firstId === secondId) {
-      return "Choose two different characters to compare their relationship.";
+    if (selectedBoxes.length !== 2) {
+      return "Select two family boxes to compare their lineage details.";
     }
 
-    const first = characters.find((character) => character.id === firstId);
-    const second = characters.find((character) => character.id === secondId);
+    const [first, second] = selectedBoxes;
     if (!first || !second) {
-      return "Select two characters from the compare panel.";
+      return "Select two family boxes to compare their lineage details.";
     }
 
     if (first.relation === second.relation) {
-      return `Both ${first.name} and ${second.name} are listed as ${first.relation.toLowerCase()}-type lineage members.`;
+      return `Both ${first.name} and ${second.name} are aligned as ${first.relation.toLowerCase()}-type lineage members.`;
     }
 
-    return `${first.name} is ${first.relation.toLowerCase()}-aligned, while ${second.name} is ${second.relation.toLowerCase()}-aligned. Use the chart to visualize their connection.`;
-  }, [characters, comparePair]);
+    return `${first.name} is ${first.relation.toLowerCase()}-aligned, while ${second.name} is ${second.relation.toLowerCase()}-aligned. Use the board to see how their roles connect.`;
+  }, [characters, selectedIds]);
+
+  useEffect(() => {
+    if (activeBox) {
+      setEditBoxId(activeBox.id);
+      setBoxForm({
+        name: activeBox.name,
+        age: activeBox.age.toString(),
+        birthday: activeBox.birthday,
+        sex: activeBox.sex,
+        nationality: activeBox.nationality,
+        mortalityYear: activeBox.mortalityYear?.toString() ?? "",
+        address: activeBox.address,
+        info: activeBox.info,
+      });
+      return;
+    }
+
+    setEditBoxId(null);
+    setBoxForm({
+      name: "",
+      age: "",
+      birthday: "",
+      sex: "",
+      nationality: "",
+      mortalityYear: "",
+      address: "",
+      info: "",
+    });
+  }, [activeBox]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((current) =>
@@ -117,21 +123,36 @@ export default function Home() {
     );
   };
 
-  const addCharacter = () => {
+  const addFamilyBox = () => {
     const next = {
       id: crypto.randomUUID(),
-      name: `Nova Blood ${characters.length + 1}`,
+      name: `Nova Box ${characters.length + 1}`,
       title: "Scion",
       age: 22,
+      birthday: "",
+      sex: "Unknown",
+      nationality: "",
+      mortalityYear: null,
+      address: "",
+      info: "",
       relation: "Unknown",
       trait: "Untamed",
       color: "bg-emerald-700/80",
       initials: `NB${characters.length + 1}`,
     };
     setCharacters((current) => [...current, next]);
+    setBoard((current) => {
+      const nextBoard = { ...current };
+      const emptySlot = Object.keys(nextBoard).find((slot) => nextBoard[slot] === null);
+      if (emptySlot) {
+        nextBoard[emptySlot] = next.id;
+      }
+      return nextBoard;
+    });
+    setSelectedIds([next.id]);
   };
 
-  const removeSelected = () => {
+  const removeSelectedBoxes = () => {
     setCharacters((current) => current.filter((character) => !selectedIds.includes(character.id)));
     setBoard((current) => {
       const next = { ...current };
@@ -160,12 +181,32 @@ export default function Home() {
     setDraggedId(null);
   };
 
-  const handleCompareChange = (index: number, value: string) => {
-    setComparePair((current) => {
-      const next: [string, string] = [...current];
-      next[index] = value;
-      return next;
-    });
+  const handleFormChange = (field: keyof typeof boxForm, value: string) => {
+    setBoxForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const saveFamilyBox = () => {
+    if (!editBoxId) return;
+    setCharacters((current) =>
+      current.map((character) =>
+        character.id === editBoxId
+          ? {
+              ...character,
+              name: boxForm.name,
+              age: parseInt(boxForm.age, 10) || 0,
+              birthday: boxForm.birthday,
+              sex: boxForm.sex,
+              nationality: boxForm.nationality,
+              mortalityYear: boxForm.mortalityYear ? parseInt(boxForm.mortalityYear, 10) : null,
+              address: boxForm.address,
+              info: boxForm.info,
+            }
+          : character
+      )
+    );
   };
 
   return (
@@ -213,24 +254,24 @@ export default function Home() {
         <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-3xl space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-rose-300/20 bg-rose-500/10 px-4 py-2 text-xs uppercase tracking-[0.32em] text-rose-100/90">
-              Royal bloodline studio
+              Bloodline Studio
             </div>
             <div>
               <h1 className="text-4xl font-bold tracking-tight text-rose-100 sm:text-5xl">
-                Build your lineage in a bleeding-edge royal palette.
+                Build your lineage in a bleeding-edge palette.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-8 text-rose-100/80 sm:text-lg">
-                Drag family members into a lineage chart, edit your character roster, and compare relationships in real time. This app is designed to feel like a modern storyboard for family heritage.
+                  Drag family boxes into a lineage chart, edit their details, and compare two boxes together on the board. This app is designed to feel like a modern storyboard for family heritage.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20">
                 <p className="text-xs uppercase tracking-[0.24em] text-rose-200/70">Feature</p>
-                <p className="mt-3 font-semibold text-white">Drag and drop characters</p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20">
-                <p className="text-xs uppercase tracking-[0.24em] text-rose-200/70">Feature</p>
-                <p className="mt-3 font-semibold text-white">Compare two lineage nodes</p>
+                  <p className="mt-3 font-semibold text-white">Drag and drop family boxes</p>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-xl shadow-black/20">
+                  <p className="text-xs uppercase tracking-[0.24em] text-rose-200/70">Feature</p>
+                  <p className="mt-3 font-semibold text-white">Edit metadata and compare two selected boxes</p>
               </div>
             </div>
           </div>
@@ -239,42 +280,47 @@ export default function Home() {
               <p className="text-sm uppercase tracking-[0.28em] text-rose-200/80">Quick controls</p>
               <button
                 type="button"
-                onClick={addCharacter}
+                onClick={addFamilyBox}
                 className="w-full rounded-3xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-400"
               >
-                Add character
+                Add family box
               </button>
               <button
                 type="button"
-                onClick={removeSelected}
+                onClick={removeSelectedBoxes}
                 className="w-full rounded-3xl border border-rose-300/20 bg-white/5 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:border-rose-400/30 hover:bg-rose-500/10"
               >
-                Remove selected
+                Delete selected family box(es)
               </button>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-rose-200/80">Selected cards</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-rose-200/70">Selected family boxes</p>
               <p className="mt-3 text-lg font-semibold text-white">{selectedIds.length}</p>
-              <p className="mt-2 text-sm text-rose-100/80">Click a card to toggle its selection.</p>
+              <p className="mt-2 text-sm text-rose-100/80">Click a family box to toggle its selection.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-8 grid gap-8 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="space-y-8">
-          <div className="rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_90px_rgba(10,5,15,0.45)]">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Lineage board</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Design your family tree with freedom</h2>
-              </div>
-              <p className="rounded-full bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-white/80">
-                Drag to place
-              </p>
+      <section className="mx-auto mt-8">
+        <div className="rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_90px_rgba(10,5,15,0.45)]">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Lineage board</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Design your family tree with freedom</h2>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {initialSlots.map((slot) => {
+            <p className="rounded-full bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.24em] text-white/80">
+              Drag family boxes into place
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {!hasBoardItems ? (
+              <div className="col-span-full flex min-h-55 items-center justify-center rounded-[28px] border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-white/80">
+                Your lineage board is empty. Add a family box to begin building your family tree.
+              </div>
+            ) : (
+              initialSlots.map((slot) => {
                 const occupantId = board[slot.id];
                 const occupant = characters.find((character) => character.id === occupantId);
                 return (
@@ -290,7 +336,7 @@ export default function Home() {
                         <p className="mt-1 text-xs text-rose-200/70">{slot.hint}</p>
                       </div>
                       <div className="rounded-full bg-rose-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-rose-100/80">
-                        slot
+                        Position
                       </div>
                     </div>
                     {occupant ? (
@@ -302,87 +348,148 @@ export default function Home() {
                         onClick={toggleSelect}
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 text-center text-sm text-white/40">
-                        Drop a character here
+                      <div className="flex h-full items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 text-center text-sm text-white/80">
+                        This position is empty. Drag a family box here.
                       </div>
                     )}
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
 
-          <div className="rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_90px_rgba(10,5,15,0.45)]">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Character roster</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Design boxes, portraits, and details</h2>
+          <div className="mt-8 grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-6">
+              <div className="mb-4">
+                <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Board compare feature</p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {selectedBoxes.length === 2
+                    ? "Two family boxes selected"
+                    : "Select two family boxes to compare"}
+                </h3>
               </div>
-              <p className="rounded-full bg-rose-500/10 px-4 py-2 text-xs uppercase tracking-[0.24em] text-rose-100/80">
-                Editable roster
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {poolCharacters.length > 0 ? (
-                poolCharacters.map((character) => (
-                  <CharacterCard
-                    key={character.id}
-                    character={character}
-                    selected={selectedIds.includes(character.id)}
-                    draggable
-                    onDragStart={setDraggedId}
-                    onClick={toggleSelect}
-                  />
-                ))
-              ) : (
-                <div className="rounded-[28px] border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-white/50">
-                  All characters are placed on the board. Add more to continue designing.
+              <p className="text-sm leading-7 text-rose-100/80">{compareText}</p>
+              {selectedBoxes.length === 2 && (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {selectedBoxes.map((box) => (
+                    <div key={box.id} className="rounded-3xl border border-white/10 bg-slate-950/90 p-4 text-sm text-rose-100/80">
+                      <p className="font-semibold text-white">{box.name}</p>
+                      <p>{box.title}</p>
+                      <p>{box.relation}</p>
+                      <p>{box.nationality}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-6">
+              <div className="mb-4">
+                <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Family box editor</p>
+                <h3 className="mt-2 text-lg font-semibold text-white">
+                  {editBoxId ? `Editing ${boxForm.name}` : "Select one family box to edit"}
+                </h3>
+              </div>
+              <div className="grid gap-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Name</span>
+                    <input
+                      value={boxForm.name}
+                      onChange={(event) => handleFormChange("name", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="text"
+                    />
+                  </label>
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Current age</span>
+                    <input
+                      value={boxForm.age}
+                      onChange={(event) => handleFormChange("age", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="number"
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Birthday</span>
+                    <input
+                      value={boxForm.birthday}
+                      onChange={(event) => handleFormChange("birthday", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="date"
+                    />
+                  </label>
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Sex</span>
+                    <input
+                      value={boxForm.sex}
+                      onChange={(event) => handleFormChange("sex", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="text"
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Nationality</span>
+                    <input
+                      value={boxForm.nationality}
+                      onChange={(event) => handleFormChange("nationality", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="text"
+                    />
+                  </label>
+                  <label className="block text-sm text-rose-100/90">
+                    <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Mortality year</span>
+                    <input
+                      value={boxForm.mortalityYear}
+                      onChange={(event) => handleFormChange("mortalityYear", event.target.value)}
+                      className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                      type="number"
+                    />
+                  </label>
+                </div>
+                <label className="block text-sm text-rose-100/90">
+                  <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Permanent address</span>
+                  <input
+                    value={boxForm.address}
+                    onChange={(event) => handleFormChange("address", event.target.value)}
+                    className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none"
+                    type="text"
+                  />
+                </label>
+                <label className="block text-sm text-rose-100/90">
+                  <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Information</span>
+                  <textarea
+                    value={boxForm.info}
+                    onChange={(event) => handleFormChange("info", event.target.value)}
+                    className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none min-h-30 resize-none"
+                  />
+                </label>
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={saveFamilyBox}
+                  disabled={!editBoxId}
+                  className="w-full rounded-3xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  Save family box
+                </button>
+                <button
+                  type="button"
+                  onClick={removeSelectedBoxes}
+                  disabled={selectedIds.length === 0}
+                  className="w-full rounded-3xl border border-rose-300/20 bg-white/5 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:border-rose-400/30 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  Delete selected family box{selectedIds.length === 1 ? "" : "es"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <aside className="space-y-8">
-          <div className="rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_90px_rgba(10,5,15,0.45)]">
-            <div className="mb-6">
-              <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Relationship compare</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Compare two characters</h2>
-            </div>
-            <div className="space-y-4">
-              {[0, 1].map((index) => (
-                <label key={index} className="block text-sm text-rose-100/85">
-                  <span className="mb-2 block text-xs uppercase tracking-[0.24em] text-rose-200/70">Character {index + 1}</span>
-                  <select
-                    value={comparePair[index]}
-                    onChange={(event) => handleCompareChange(index, event.target.value)}
-                    className="w-full rounded-3xl border border-white/10 bg-slate-950/90 px-4 py-3 text-white outline-none transition focus:border-rose-400"
-                  >
-                    {characters.map((character) => (
-                      <option key={character.id} value={character.id} className="bg-slate-950 text-white">
-                        {character.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-            <div className="mt-6 rounded-[28px] border border-rose-400/10 bg-rose-400/5 p-5 text-sm text-rose-100/90">
-              <p className="font-semibold text-white">Relationship result</p>
-              <p className="mt-3 leading-7">{compareText}</p>
-            </div>
-          </div>
-
-          <div className="rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_30px_90px_rgba(10,5,15,0.45)]">
-            <p className="text-sm uppercase tracking-[0.28em] text-rose-200/70">Design notes</p>
-            <ul className="mt-4 space-y-3 text-sm text-rose-100/80">
-              <li>• Drag cards into any slot to shape your lineage flow.</li>
-              <li>• Click a card to mark it selected, then remove it with the button.</li>
-              <li>• Use the compare panel to focus on two individual characters.</li>
-              <li>• Add new characters and change the roster as your family grows.</li>
-            </ul>
-          </div>
-        </aside>
       </section>
 
       <footer className="mt-12 border-t border-white/10 bg-slate-950/95 px-4 py-10 text-white sm:px-6 lg:px-8">

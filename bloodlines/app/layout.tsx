@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bloodlines | Royal Lineage Designer",
+  title: "Bloodlines | Family Tree Builder",
   description: "A family bloodline builder with draggable character cards, lineage design, and relationship comparison.",
 };
 
