@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Bloodlines | Family Tree Builder",
-  description: "A family bloodline builder with draggable character cards, lineage design, and relationship comparison.",
+  description: "A family bloodline builder with draggable character cards, lineage design, and relationship comparison. Record your history.",
 };
 
 export default function RootLayout({
