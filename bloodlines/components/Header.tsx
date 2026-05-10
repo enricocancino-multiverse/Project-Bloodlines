@@ -16,7 +16,7 @@ export default function Header({ onThemeClick, currentTheme }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg font-bold text-white tracking-wider">BLOODLINES</h1>
-            <p className="text-xs text-accent">Royal lineage lab</p>
+            <p className="text-xs text-accent">Lineage lab</p>
           </div>
         </div>
 
