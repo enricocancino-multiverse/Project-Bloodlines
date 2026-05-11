@@ -11,6 +11,6 @@ About: Web-app that helps us track, visualize, and store our family tree, relati
 </ul>
 
 
-# Development phase: Hiatus (busy in Machine Learning.)
+## Development phase: Hiatus (busy in Machine Learning.)
 
 Enrico: Will continue on first of June, Machine Learning and Gen Ai is interesting.
